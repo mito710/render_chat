@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat App</title>
+    <style>
+        .chat {
+            display: flex;
+            flex-direction: row;
+            height: 100vh;
+            width: auto;
+            background: #93AAD4;
+        }
+
+        .bubble {
+            background: white;
+
+            padding: 10px;
+            border-radius: 12px;
+
+            width: fit-content;
+            height: fit-content;
+            writing-mode: vertical-rl;
+
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .15);
+        }
+
+        .meta {
+            font-size: 12px;
+            color: #666;
+            writing-mode: vertical-rl;
+
+            margin-right: 6px;
+        }
+
+        .messages {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+
+            writing-mode: vertical-rl;
+
+            overflow-x: auto;
+            overflow-y: hidden;
+
+            list-style: none;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .messages li {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+
+            writing-mode: horizontal-tb; 
+
+            padding: 5px 8px;
+            margin: 2px;
+            border-radius: 10px;
+
+            width: fit-content;
+            height: fit-content;
+
+        }
+
+        .my-message .bubble {
+            background: #dcf8c6;
+            margin-left: auto;
+        }
+
+        .other-message .bubble {
+            background: white;
+            margin-right: auto;
+        }
+
+        .form {
+            display: flex;
+        }
+
+        .input {
+            padding: 10px;
+            border: 1px solid #F5F5F5;
+
+            writing-mode: vertical-rl;
+        }
+
+        .submit {
+            padding: 10px;
+            border: 1px solid #ccc;
+            background: #F5F5F5;
+            cursor: pointer;
+
+            writing-mode: vertical-rl;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat">
+        <ul class="messages"></ul>
+        <form class="form">
+            <input class="input" autocomplete="off" />
+            <button class="submit">送信</button>
+        </form>
+    </div>
+
+    <script>
+        function main() {
+            const host = location.origin.replace(/^http/, 'ws')
+            const ws = new WebSocket(host + '/ws')
+            const myId = self.crypto.randomUUID().substr(0, 8)
+
+            const form = document.querySelector('.form')
+
+            form.onsubmit = function (e) {
+                e.preventDefault()
+                const input = document.querySelector('.input')
+                const text = input.value
+                const timeToSend = new Date().toLocaleTimeString('ja-JP', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                if (!text) {
+                    return
+                }
+                ws.send(JSON.stringify({
+                    id: myId,
+                    text: text,
+                    time: timeToSend
+                }))
+                input.value = ''
+                input.focus()
+            }
+
+            ws.onmessage = function (msg) {
+                //const response = msg.data
+                //li.textContent = response
+                const messageList = document.querySelector('.messages')
+                const li = document.createElement('li')
+                const data = JSON.parse(msg.data)
+
+                const bubble = document.createElement('div')
+                bubble.className = 'bubble'
+                bubble.textContent = data.text
+                const meta = document.createElement('div')
+                meta.className = 'meta'
+                meta.textContent = `${data.id} ${data.time}`
+
+                if (data.id === myId) {
+                    li.classList.add('my-message')
+                } else {
+                    li.classList.add('other-message')
+                }
+
+                li.appendChild(bubble)
+                li.appendChild(meta)
+                messageList.appendChild(li)
+            }
+
+            ws.onerror = function (error) {
+                console.error('WebSocket Error: ', error)
+            }
+        }
+
+        main()
+    </script>
+</body>
+
+</html>
