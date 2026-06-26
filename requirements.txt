@@ -1,1 +1,4 @@
+fastapi
+openai
+python-dotenv
 fastapi[all]
